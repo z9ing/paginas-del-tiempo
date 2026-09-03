@@ -443,12 +443,14 @@ gap: 1rem;
 }
 
 .book-cover {
-width: 45px;
-height: 65px;
-background-color: var(--brown-medium);
-border: 1px solid var(--border-color);
-box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-object-fit: cover;
+  width: 45px;
+  height: 65px;
+  background-color: var(--brown-medium);
+  border: 1px solid var(--border-color);
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
 }
 
 .status {
@@ -672,13 +674,15 @@ background-color: var(--bg-main);
 background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
 border: 3px solid var(--border-color);
 box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.4);
-width: 92%;
-max-width: 650px;
-max-height: 90vh;
+width: max-content;
+min-width: min(540px, 94vw);
+max-width: 95vw;
+max-height: 92vh;
 overflow-y: auto;
 padding: 2rem;
 position: relative;
 border-radius: 4px;
+box-sizing: border-box;
 }
 
 .modal-card h3 {
@@ -839,19 +843,24 @@ background-color: #FFFDF9;
 border-radius: 4px;
 padding: 1rem;
 overflow-y: auto;
+overflow-x: hidden;
 gap: 0.8rem;
 margin-bottom: 1rem;
 box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+box-sizing: border-box;
+width: 100%;
 }
 .chat-msg {
 display: flex;
 flex-direction: column;
-max-width: 75%;
+max-width: 85%;
 padding: 0.6rem 0.9rem;
 border-radius: 6px;
 font-size: 0.92rem;
 line-height: 1.4;
 position: relative;
+word-break: break-word;
+overflow-wrap: break-word;
 }
 .chat-msg.cliente {
 align-self: flex-start;
@@ -997,8 +1006,8 @@ Registro del Archivo
 <span class="stat-title">Usuarios registrados</span>
 <span class="stat-icon">👥</span>
 </div>
-<div class="stat-value">842</div>
-<div class="stat-change">↑ +24 lectores nuevos</div>
+<div class="stat-value" id="stat-total-usuarios">3</div>
+<div class="stat-change" id="stat-total-usuarios-sub">↑ 3 lectores registrados</div>
 </div>
 <div class="stat-card">
 <div class="stat-header">
@@ -1055,35 +1064,8 @@ Registro del Archivo
 
 <div class="section-box">
 <h3>Actividad reciente <span>🕰️</span></h3>
-<ul class="activity-feed">
-<li class="activity-item">
-<div class="activity-icon">🛒</div>
-<div class="activity-content">
-<p>Nuevo pedido realizado por <strong>María García</strong></p>
-<span class="activity-time">Hace 15 minutos</span>
-</div>
-</li>
-<li class="activity-item">
-<div class="activity-icon">📚</div>
-<div class="activity-content">
-<p>Se agregó <strong>"El Principito"</strong> al catálogo</p>
-<span class="activity-time">Hace 2 horas</span>
-</div>
-</li>
-<li class="activity-item">
-<div class="activity-icon">👥</div>
-<div class="activity-content">
-<p>Usuario nuevo registrado: <strong>carlos_lector</strong></p>
-<span class="activity-time">Ayer, 18:45</span>
-</div>
-</li>
-<li class="activity-item">
-<div class="activity-icon">🏷️</div>
-<div class="activity-content">
-<p>Se actualizó el precio de <strong>"Los tres mosqueteros"</strong></p>
-<span class="activity-time">Ayer, 14:20</span>
-</div>
-</li>
+<ul class="activity-feed" id="activityFeed">
+<!-- Renderizado dinámico desde JS -->
 </ul>
 </div>
 </div>
@@ -1101,7 +1083,12 @@ Registro del Archivo
 <div class="form-grid">
 <div class="form-group">
 <label for="libroFormIsbn">ISBN</label>
-<input type="text" id="libroFormIsbn" required placeholder="Ej: 9788420687414">
+<div style="display:flex; gap: 0.5rem; align-items: center;">
+  <input type="text" id="libroFormIsbn" required placeholder="Ej: 9788415618836" style="flex:1;" maxlength="13">
+  <button type="button" id="btnBuscarISBN" onclick="buscarPorISBN()" style="white-space:nowrap; padding: 0.5rem 0.8rem; background: var(--brown-dark); color: #fff; border: 2px solid #000; font-family: inherit; font-weight: bold; cursor: pointer; font-size: 0.85rem;">🔍 Buscar</button>
+</div>
+<div id="isbnBuscandoMsg" style="display:none; font-size:0.8rem; color: var(--text-muted); font-style:italic; margin-top:0.3rem;">⏳ Buscando en Open Library...</div>
+<div id="isbnResultadoMsg" style="display:none; font-size:0.8rem; font-style:italic; margin-top:0.3rem;"></div>
 </div>
 <div class="form-group">
 <label for="libroFormTitulo">Título del Libro</label>
@@ -1113,24 +1100,17 @@ Registro del Archivo
 </div>
 <div class="form-group">
 <label for="libroFormCategoria">Categoría</label>
-<input type="text" id="libroFormCategoria" required placeholder="Ej: Terror" list="categoriasList">
-<datalist id="categoriasList">
-<option value="Terror">
-<option value="Fantasía">
-<option value="Ciencia">
-<option value="Poesía">
-<option value="Romance">
-<option value="Historia">
-<option value="Biografía">
-<option value="Infantil">
-<option value="Autoayuda">
-<option value="Economía">
-<option value="Novela clásica">
-</datalist>
+<select id="libroFormCategoria" required onchange="manejarCambioCategoriaForm(this.value)">
+  <!-- Carga dinámica vía JS -->
+</select>
+</div>
+<div class="form-group full-width" id="grupoNuevaCategoriaForm" style="display:none; background: var(--bg-secondary); padding: 0.8rem; border: 1px dashed var(--brown-dark);">
+<label for="libroFormNuevaCategoria">Especificar Nueva Categoría</label>
+<input type="text" id="libroFormNuevaCategoria" placeholder="Ej: Ficción, Novela gráfica, Thriller...">
 </div>
 <div class="form-group">
 <label for="libroFormPrecio">Precio ($)</label>
-<input type="number" id="libroFormPrecio" min="0" step="500" required placeholder="Ej: 35000">
+<input type="number" id="libroFormPrecio" min="20000" step="500" required placeholder="Ej: 35000">
 </div>
 <div class="form-group">
 <label for="libroFormStock">Cantidad en Stock</label>
@@ -1155,6 +1135,18 @@ Registro del Archivo
 <label for="libroFormDescripcion">Descripción / Resumen</label>
 <textarea id="libroFormDescripcion" rows="3" placeholder="Breve reseña del libro..."></textarea>
 </div>
+  <div class="form-group full-width" style="border: 2px dashed var(--brown-light); padding: 1rem; background: var(--bg-secondary);">
+    <label>Portada personalizada</label>
+    <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem;">
+      <img id="libroFormPortadaPreview" src="" alt="Vista previa" style="display:none; width: 60px; height: 88px; object-fit: cover; border: 2px solid var(--border-color); box-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+      <div style="flex:1;">
+        <input type="file" id="libroFormPortadaInput" accept="image/*" style="display:block; margin-bottom: 0.5rem; font-family: inherit; font-size: 0.85rem;">
+        <div style="font-size:0.8rem; color: var(--text-muted); font-style: italic;">Sube una imagen JPG/PNG. Si el ISBN carga portada automáticamente, esta la reemplazará.</div>
+        <button type="button" id="libroFormPortadaBorrar" onclick="eliminarPortadaPersonalizada()" style="display:none; margin-top: 0.5rem; color: #b71c1c; background: none; border: none; cursor: pointer; font-family: inherit; text-decoration: underline; font-weight: bold;">🗑 Eliminar portada personalizada</button>
+      </div>
+    </div>
+  </div>
+  <input type="hidden" id="libroFormPortadaData">
 </div>
 <div class="modal-actions">
 <button type="button" class="btn-cancel" onclick="cerrarModal('modalFormLibro')">Cancelar</button>
@@ -1200,7 +1192,7 @@ Registro del Archivo
 
 <!-- MODAL PEDIDOS -->
 <div class="modal-overlay" id="modalPedidos">
-<div class="modal-card" style="max-width: 750px;">
+<div class="modal-card">
 <h3>Pedidos del Sistema <button type="button" class="modal-close" onclick="cerrarModal('modalPedidos')">&times;</button></h3>
 <p style="margin-bottom: 1rem; color: var(--text-muted);">Listado de órdenes procesadas recientemente:</p>
 <table class="vintage-table">
@@ -1245,7 +1237,7 @@ Registro del Archivo
 
 <!-- MODAL USUARIOS -->
 <div class="modal-overlay" id="modalUsuarios">
-<div class="modal-card" style="max-width: 800px;">
+<div class="modal-card">
 <h3>Gestión de Usuarios Registrados <button type="button" class="modal-close" onclick="cerrarModal('modalUsuarios')">&times;</button></h3>
 <form id="formNuevoUsuario" style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1rem; border: 1px solid var(--brown-medium);">
 <h4 style="margin-bottom: 0.8rem; color: var(--brown-dark);">Registrar Nuevo Usuario:</h4>
@@ -1296,7 +1288,7 @@ Registro del Archivo
 
 <!-- MODAL GARANTÍAS -->
 <div class="modal-overlay" id="modalGarantias">
-<div class="modal-card" style="max-width: 850px;">
+<div class="modal-card">
 <h3>Solicitudes de Garantía y Reclamaciones 🛡️ <button type="button" class="modal-close" onclick="cerrarModal('modalGarantias')">&times;</button></h3>
 <p style="margin-bottom: 1rem; color: var(--text-muted);">Casos reportados por usuarios que buscan solución por garantía de su compra:</p>
 <table class="vintage-table">
@@ -1321,7 +1313,7 @@ Registro del Archivo
 
 <!-- MODAL CHAT DE GARANTÍA CON FOTOS -->
 <div class="modal-overlay" id="modalChatGarantia">
-<div class="modal-card" style="max-width: 680px;">
+<div class="modal-card" style="width: 92%; max-width: 600px;">
 <h3 id="chatGarantiaTitulo">Chat de Soporte <button type="button" class="modal-close" onclick="cerrarModal('modalChatGarantia')">&times;</button></h3>
 <p style="margin-bottom: 0.8rem; color: var(--text-muted);" id="chatGarantiaSubtitulo">Conversación en directo con el comprador:</p>
 
@@ -1357,7 +1349,7 @@ Registro del Archivo
 
 <!-- MODAL FAVORITOS (MÁS VENDIDOS) -->
 <div class="modal-overlay" id="modalFavoritos">
-<div class="modal-card" style="max-width: 750px;">
+<div class="modal-card">
 <h3>Libros Más Vendidos y Favoritos del Público ❤️ <button type="button" class="modal-close" onclick="cerrarModal('modalFavoritos')">&times;</button></h3>
 <p style="margin-bottom: 1rem; color: var(--text-muted);">Ranking de las historias más solicitadas por los lectores:</p>
 <table class="vintage-table">
@@ -1381,7 +1373,7 @@ Registro del Archivo
 
 <!-- MODAL INVENTARIO -->
 <div class="modal-overlay" id="modalInventario">
-<div class="modal-card" style="max-width: 850px;">
+<div class="modal-card">
 <h3>Control de Inventario y Stock General 📦 <button type="button" class="modal-close" onclick="cerrarModal('modalInventario')">&times;</button></h3>
 <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary); padding: 1rem; border: 1px solid var(--brown-medium); margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem;">
 <div>
@@ -1416,7 +1408,7 @@ Cargando datos de stock...
 
 <!-- MODAL ESTADÍSTICAS -->
 <div class="modal-overlay" id="modalEstadisticas">
-<div class="modal-card" style="max-width: 800px;">
+<div class="modal-card" style="width: 92%; max-width: 800px;">
 <h3>Estadísticas Reales de Ventas 📊 <button type="button" class="modal-close" onclick="cerrarModal('modalEstadisticas')">&times;</button></h3>
 <div class="stats-grid" style="margin-bottom: 1.5rem;">
 <div class="stat-card">
@@ -1486,7 +1478,7 @@ Cargando datos de stock...
 <!-- SCRIPT COMPLETO INTERACTIVO -->
 <script>
 const LIBROS_INICIALES = [
-  { id: 101, isbn: "9788420687414", titulo: "Dracula", autor: "Bram Stoker", precio: 35000, descripcion: "Clasico de terror", stock: 8, categoria: "Terror", encuadernacion: "Dura", estado: "Excelente" },
+  { id: 101, isbn: "9788415618836", titulo: "Dracula", autor: "Bram Stoker", precio: 35000, descripcion: "Clasico de terror", stock: 8, categoria: "Terror", encuadernacion: "Dura", estado: "Excelente" },
   { id: 102, isbn: "9788478884452", titulo: "Harry Potter", autor: "J.K Rowling", precio: 50000, descripcion: "Magia y aventura", stock: 10, categoria: "Fantasia", encuadernacion: "Blanda", estado: "Bueno" },
   { id: 103, isbn: "9788491990437", titulo: "Breves respuestas", autor: "Stephen Hawking", precio: 42000, descripcion: "Ciencia moderna", stock: 6, categoria: "Ciencia", encuadernacion: "Dura", estado: "Excelente" },
   { id: 104, isbn: "9788437604947", titulo: "20 poemas de amor", autor: "Pablo Neruda", precio: 25000, descripcion: "Poesia romantica", stock: 7, categoria: "Poesia", encuadernacion: "Blanda", estado: "Bueno" },
@@ -1575,9 +1567,19 @@ const GARANTIAS_INICIALES = [
   }
 ];
 
+const ACTIVIDADES_INICIALES = [
+  { icono: "🛒", texto: "Nuevo pedido realizado por <strong>María García</strong>", tiempo: "Hace 15 minutos" },
+  { icono: "📚", texto: "Se agregó <strong>\"Drácula\"</strong> al catálogo", tiempo: "Hace 1 hora" },
+  { icono: "🛡️", texto: "Nuevo reporte de garantía de <strong>carlos_lector</strong>", tiempo: "Hace 2 horas" },
+  { icono: "👥", texto: "Usuario nuevo registrado: <strong>Ana Martínez</strong>", tiempo: "Ayer, 18:45" },
+  { icono: "🏷️", texto: "Se actualizó la categoría <strong>Fantasía</strong>", tiempo: "Ayer, 14:20" }
+];
+
 let libros = [];
 let usuarios = [];
 let garantias = [];
+let actividades = [];
+let categoriasPersonalizadas = [];
 let casoGarantiaActivoId = null;
 let fotoAdjuntaDataUrl = null;
 
@@ -1591,6 +1593,12 @@ function cargarDatos() {
   const guardadasGarantias = localStorage.getItem('paginas_garantias_v5');
   garantias = guardadasGarantias ? JSON.parse(guardadasGarantias) : [...GARANTIAS_INICIALES];
 
+  const guardadasActividades = localStorage.getItem('paginas_actividades_v1');
+  actividades = guardadasActividades ? JSON.parse(guardadasActividades) : [...ACTIVIDADES_INICIALES];
+
+  const guardadasCategorias = localStorage.getItem('paginas_categorias_v1');
+  categoriasPersonalizadas = guardadasCategorias ? JSON.parse(guardadasCategorias) : ["Terror", "Fantasía", "Ciencia", "Poesía", "Romance", "Historia", "Biografía", "Infantil", "Autoayuda", "Economía", "Novela clásica", "Ficción"];
+
   guardarDatos();
 }
 
@@ -1598,6 +1606,54 @@ function guardarDatos() {
   localStorage.setItem('paginas_libros_v4', JSON.stringify(libros));
   localStorage.setItem('paginas_usuarios_v2', JSON.stringify(usuarios));
   localStorage.setItem('paginas_garantias_v5', JSON.stringify(garantias));
+  localStorage.setItem('paginas_actividades_v1', JSON.stringify(actividades));
+  localStorage.setItem('paginas_categorias_v1', JSON.stringify(categoriasPersonalizadas));
+}
+
+function obtenerTodasLasCategorias() {
+  const deLibros = libros.map(l => l.categoria).filter(Boolean);
+  const setCat = new Set([...deLibros, ...categoriasPersonalizadas]);
+  const arr = Array.from(setCat);
+  arr.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+  return arr;
+}
+
+function registrarActividad(icono, texto) {
+  const ahora = new Date();
+  const horaStr = `${ahora.getHours()}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+  
+  actividades.unshift({
+    icono: icono,
+    texto: texto,
+    tiempo: `Hoy, ${horaStr}`
+  });
+
+  if (actividades.length > 15) {
+    actividades = actividades.slice(0, 15);
+  }
+
+  guardarDatos();
+  renderizarActividadReciente();
+}
+
+function renderizarActividadReciente() {
+  const feed = document.getElementById('activityFeed');
+  if (!feed) return;
+
+  if (!actividades || actividades.length === 0) {
+    feed.innerHTML = `<li class="activity-item" style="color: var(--text-muted);">Sin actividad reciente registrada.</li>`;
+    return;
+  }
+
+  feed.innerHTML = actividades.map(act => `
+    <li class="activity-item">
+      <div class="activity-icon">${act.icono}</div>
+      <div class="activity-content">
+        <p>${act.texto}</p>
+        <span class="activity-time">${escaparHTML(act.tiempo)}</span>
+      </div>
+    </li>
+  `).join('');
 }
 
 function renderizarTabla() {
@@ -1641,9 +1697,13 @@ function renderizarTabla() {
       tr.innerHTML = `
         <td>
           <div class="book-cell">
-            <div class="book-cover" style="background-color: ${obtenerColorCover(libro.categoria)}; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: bold; padding: 2px; text-align: center;">
-              #${libro.id}
-            </div>
+          <img
+              class="book-cover"
+              src="${libro.portada ? libro.portada : `https://covers.openlibrary.org/b/isbn/${escaparHTML(libro.isbn)}-M.jpg`}"
+              alt="Portada de ${escaparHTML(libro.titulo)}"
+              title="${escaparHTML(libro.titulo)}"
+              onerror="this.onerror=null; this.outerHTML='<div style=\'width:45px;height:65px;border:1px solid #000;box-shadow:2px 2px 4px rgba(0,0,0,0.3);background-color:${obtenerColorCover(libro.categoria)};display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:bold;color:#fff;padding:2px;text-align:center;\'>${escaparHTML(libro.titulo.substring(0,6))}</div>';"
+            >
             <div>
               <strong>${escaparHTML(libro.titulo)}</strong>
               <div style="font-size: 0.8rem; color: var(--text-muted);">ISBN: ${escaparHTML(libro.isbn)}</div>
@@ -1672,31 +1732,71 @@ function renderizarTabla() {
 function actualizarEstadisticas() {
   const elTotal = document.getElementById('stat-total-libros');
   const elChange = document.getElementById('stat-total-change');
-  if (elTotal) {
-    elTotal.textContent = libros.length.toLocaleString('es-CO');
-  }
-  if (elChange) {
-    elChange.textContent = `↑ ${libros.length} libros en catálogo`;
-  }
+  if (elTotal) elTotal.textContent = libros.length.toLocaleString('es-CO');
+  if (elChange) elChange.textContent = `↑ ${libros.length} libros en catálogo`;
+
+  const elUsrTotal = document.getElementById('stat-total-usuarios');
+  const elUsrSub = document.getElementById('stat-total-usuarios-sub');
+  if (elUsrTotal) elUsrTotal.textContent = usuarios.length;
+  if (elUsrSub) elUsrSub.textContent = `↑ ${usuarios.length} lectores registrados`;
 }
 
 function actualizarOpcionesCategorias() {
-  const selectCat = document.getElementById('filterCategorySelect');
-  if (!selectCat) return;
-  const catActual = selectCat.value;
+  const selectFilter = document.getElementById('filterCategorySelect');
+  const selectForm = document.getElementById('libroFormCategoria');
+  const todasCategorias = obtenerTodasLasCategorias();
 
-  const categorias = Array.from(new Set(libros.map(l => l.categoria).filter(Boolean)));
-  categorias.sort();
+  // 1. Filtro en Dashboard
+  if (selectFilter) {
+    const catActual = selectFilter.value;
+    selectFilter.innerHTML = '<option value="">Todas las categorías</option>';
+    todasCategorias.forEach(cat => {
+      const count = libros.filter(l => l.categoria === cat).length;
+      const option = document.createElement('option');
+      option.value = cat;
+      option.textContent = `${cat} (${count})`;
+      if (cat === catActual) option.selected = true;
+      selectFilter.appendChild(option);
+    });
+  }
 
-  selectCat.innerHTML = '<option value="">Todas las categorías</option>';
-  categorias.forEach(cat => {
-    const count = libros.filter(l => l.categoria === cat).length;
-    const option = document.createElement('option');
-    option.value = cat;
-    option.textContent = `${cat} (${count})`;
-    if (cat === catActual) option.selected = true;
-    selectCat.appendChild(option);
-  });
+  // 2. Select en Formulario de Agregar/Editar Libro
+  if (selectForm) {
+    const catActualForm = selectForm.value;
+    selectForm.innerHTML = '<option value="" disabled selected>-- Selecciona una categoría --</option>';
+    todasCategorias.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat;
+      option.textContent = cat;
+      selectForm.appendChild(option);
+    });
+    const optionNueva = document.createElement('option');
+    optionNueva.value = '__NUEVA__';
+    optionNueva.textContent = '➕ Agregar nueva categoría...';
+    selectForm.appendChild(optionNueva);
+
+    if (catActualForm && (todasCategorias.includes(catActualForm) || catActualForm === '__NUEVA__')) {
+      selectForm.value = catActualForm;
+    }
+  }
+}
+
+function manejarCambioCategoriaForm(val) {
+  const grupoNueva = document.getElementById('grupoNuevaCategoriaForm');
+  const inputNueva = document.getElementById('libroFormNuevaCategoria');
+  if (val === '__NUEVA__') {
+    if (grupoNueva) grupoNueva.style.display = 'block';
+    if (inputNueva) {
+      inputNueva.required = true;
+      inputNueva.focus();
+    }
+  } else {
+    if (grupoNueva) grupoNueva.style.display = 'none';
+    if (inputNueva) {
+      inputNueva.required = false;
+      inputNueva.value = '';
+    }
+  }
 }
 
 function obtenerColorCover(cat) {
@@ -1732,15 +1832,26 @@ function abrirModal(idModal) {
 function cerrarModal(idModal) {
   const modal = document.getElementById(idModal);
   if (modal) modal.classList.remove('active');
+  restablecerSidebarActive();
+}
+
+function restablecerSidebarActive() {
+  const sidebarLinks = document.querySelectorAll('.sidebar li a');
+  if (sidebarLinks.length > 0) {
+    sidebarLinks.forEach(l => l.classList.remove('active'));
+    sidebarLinks[0].classList.add('active');
+  }
 }
 
 function abrirModalForm(idLibro = null) {
+  actualizarOpcionesCategorias();
+
   const modalTitle = document.getElementById('modalFormTitle');
   const inputId = document.getElementById('libroFormId');
   const inputIsbn = document.getElementById('libroFormIsbn');
   const inputTitulo = document.getElementById('libroFormTitulo');
   const inputAutor = document.getElementById('libroFormAutor');
-  const inputCategoria = document.getElementById('libroFormCategoria');
+  const selectCategoria = document.getElementById('libroFormCategoria');
   const inputPrecio = document.getElementById('libroFormPrecio');
   const inputStock = document.getElementById('libroFormStock');
   const selectEnc = document.getElementById('libroFormEncuadernacion');
@@ -1755,19 +1866,138 @@ function abrirModalForm(idLibro = null) {
     inputIsbn.value = libro.isbn || '';
     inputTitulo.value = libro.titulo || '';
     inputAutor.value = libro.autor || '';
-    inputCategoria.value = libro.categoria || '';
-    inputPrecio.value = libro.precio || 0;
+    
+    // Categoría
+    const cat = libro.categoria || '';
+    const todas = obtenerTodasLasCategorias();
+    if (cat && !todas.includes(cat)) {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      selectCategoria.insertBefore(opt, selectCategoria.lastElementChild);
+    }
+    selectCategoria.value = cat;
+    manejarCambioCategoriaForm(cat);
+
+    inputPrecio.value = libro.precio || 20000;
     inputStock.value = libro.stock || 0;
     selectEnc.value = libro.encuadernacion || 'Dura';
     selectEst.value = libro.estado === 'Nuevo' ? 'Excelente' : (libro.estado || 'Excelente');
     inputDesc.value = libro.descripcion || '';
+
+    // Portada
+    const preview = document.getElementById('libroFormPortadaPreview');
+    const btnBorrar = document.getElementById('libroFormPortadaBorrar');
+    const hiddenData = document.getElementById('libroFormPortadaData');
+    if (libro.portada) {
+      preview.src = libro.portada;
+      preview.style.display = 'block';
+      btnBorrar.style.display = 'inline-block';
+      hiddenData.value = libro.portada;
+    } else {
+      preview.src = '';
+      preview.style.display = 'none';
+      btnBorrar.style.display = 'none';
+      hiddenData.value = '';
+    }
+    document.getElementById('libroFormPortadaInput').value = '';
   } else {
     modalTitle.childNodes[0].nodeValue = 'Agregar Libro Usado ';
     inputId.value = '';
     document.getElementById('formLibro').reset();
+    selectCategoria.value = '';
+    manejarCambioCategoriaForm('');
+    inputPrecio.value = '';
+    // Limpiar portada
+    const preview = document.getElementById('libroFormPortadaPreview');
+    preview.src = '';
+    preview.style.display = 'none';
+    document.getElementById('libroFormPortadaBorrar').style.display = 'none';
+    document.getElementById('libroFormPortadaData').value = '';
   }
 
   abrirModal('modalFormLibro');
+}
+
+function eliminarPortadaPersonalizada() {
+  const preview = document.getElementById('libroFormPortadaPreview');
+  const btnBorrar = document.getElementById('libroFormPortadaBorrar');
+  const hidden = document.getElementById('libroFormPortadaData');
+  const fileInput = document.getElementById('libroFormPortadaInput');
+
+  preview.src = '';
+  preview.style.display = 'none';
+  btnBorrar.style.display = 'none';
+  hidden.value = '';
+  if (fileInput) fileInput.value = '';
+}
+
+async function buscarPorISBN() {
+  const isbn = document.getElementById('libroFormIsbn').value.trim().replace(/[-\s]/g, '');
+  const msgBuscando = document.getElementById('isbnBuscandoMsg');
+  const msgResultado = document.getElementById('isbnResultadoMsg');
+
+  if (!isbn || isbn.length < 10) {
+    msgResultado.style.display = 'block';
+    msgResultado.style.color = '#b71c1c';
+    msgResultado.textContent = '⚠️ Ingresa un ISBN válido de 10 o 13 dígitos.';
+    return;
+  }
+
+  msgBuscando.style.display = 'block';
+  msgResultado.style.display = 'none';
+  document.getElementById('btnBuscarISBN').disabled = true;
+
+  try {
+    const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const key = `ISBN:${isbn}`;
+
+    if (data[key]) {
+      const book = data[key];
+
+      // Título
+      if (book.title) {
+        document.getElementById('libroFormTitulo').value = book.title;
+      }
+
+      // Autor (primer autor)
+      if (book.authors && book.authors.length > 0) {
+        document.getElementById('libroFormAutor').value = book.authors[0].name;
+      }
+
+      // Categoría (primer subject si existe)
+      if (book.subjects && book.subjects.length > 0) {
+        const subject = (book.subjects[0].name || book.subjects[0]).substring(0, 30);
+        const selectCat = document.getElementById('libroFormCategoria');
+        let existe = Array.from(selectCat.options).some(o => o.value === subject);
+        if (!existe) {
+          const opt = document.createElement('option');
+          opt.value = subject;
+          opt.textContent = subject;
+          selectCat.insertBefore(opt, selectCat.lastElementChild);
+        }
+        selectCat.value = subject;
+        manejarCambioCategoriaForm(subject);
+      }
+
+      msgResultado.style.display = 'block';
+      msgResultado.style.color = '#33691e';
+      msgResultado.textContent = '✅ Datos encontrados y autocompletados. Revisa y ajusta si es necesario.';
+    } else {
+      msgResultado.style.display = 'block';
+      msgResultado.style.color = '#e65100';
+      msgResultado.textContent = '📭 ISBN no encontrado en Open Library. Completa los campos manualmente.';
+    }
+  } catch (err) {
+    msgResultado.style.display = 'block';
+    msgResultado.style.color = '#b71c1c';
+    msgResultado.textContent = '❌ Error al conectar con Open Library. Completa los campos manualmente.';
+  } finally {
+    msgBuscando.style.display = 'none';
+    document.getElementById('btnBuscarISBN').disabled = false;
+  }
 }
 
 function abrirModalVer(idLibro) {
@@ -1827,6 +2057,7 @@ function eliminarLibro(idLibro) {
 
   if (confirm(`¿Estás seguro de que deseas eliminar "${libro.titulo}" del catálogo?`)) {
     libros = libros.filter(l => l.id !== idLibro);
+    registrarActividad('🗑️', `Se eliminó <strong>"${escaparHTML(libro.titulo)}"</strong> del catálogo`);
     guardarDatos();
     renderizarTabla();
   }
@@ -1857,8 +2088,10 @@ function eliminarUsuario(idUsr) {
 
   if (confirm(`¿Estás seguro de que deseas eliminar el usuario "${usr.usuario}"?`)) {
     usuarios = usuarios.filter(u => u.id !== idUsr);
+    registrarActividad('🗑️', `Se eliminó al usuario <strong>${escaparHTML(usr.usuario)}</strong>`);
     guardarDatos();
     renderModalUsuarios();
+    actualizarEstadisticas();
   }
 }
 
@@ -1961,6 +2194,7 @@ function marcarCasoActualResuelto() {
     text: "[SISTEMA] El caso de garantía ha sido marcado como RESUELTO por el administrador."
   });
 
+  registrarActividad('🛡️', `Caso de garantía <strong>#${caso.id}</strong> marcado como RESUELTO`);
   guardarDatos();
   renderMensajesChat();
   renderModalGarantias();
@@ -1984,6 +2218,7 @@ function eliminarCasoGarantia(idCaso) {
 
   if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el chat del caso #${caso.id} (${caso.usuario})?`)) {
     garantias = garantias.filter(g => g.id !== idCaso);
+    registrarActividad('🗑️', `Se eliminó el historial del chat <strong>#${caso.id}</strong>`);
     guardarDatos();
     renderModalGarantias();
     if (casoGarantiaActivoId === idCaso) {
@@ -2061,6 +2296,23 @@ function modificarStock(idLibro, cambio) {
 document.addEventListener('DOMContentLoaded', function() {
   cargarDatos();
   renderizarTabla();
+  renderizarActividadReciente();
+
+  // Listener para previsualizar la foto de portada en tiempo real
+  document.getElementById('libroFormPortadaInput')?.addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUrl = e.target.result;
+      const preview = document.getElementById('libroFormPortadaPreview');
+      preview.src = dataUrl;
+      preview.style.display = 'block';
+      document.getElementById('libroFormPortadaData').value = dataUrl;
+      document.getElementById('libroFormPortadaBorrar').style.display = 'inline-block';
+    };
+    reader.readAsDataURL(file);
+  });
 
   document.getElementById('menuToggle')?.addEventListener('click', function() {
     document.getElementById('sidebar').classList.toggle('active');
@@ -2081,29 +2333,53 @@ document.addEventListener('DOMContentLoaded', function() {
     let estadoIngresado = document.getElementById('libroFormEstado').value;
     if (estadoIngresado === 'Nuevo') estadoIngresado = 'Excelente';
 
+    const precioIngresado = parseFloat(document.getElementById('libroFormPrecio').value) || 0;
+    if (precioIngresado < 20000) {
+      alert('⚠️ El precio mínimo para cualquier libro debe ser $20.000 COP.');
+      return;
+    }
+
+    const selCatVal = document.getElementById('libroFormCategoria').value;
+    let catFinal = selCatVal;
+    if (selCatVal === '__NUEVA__') {
+      catFinal = document.getElementById('libroFormNuevaCategoria').value.trim();
+      if (!catFinal) {
+        alert('⚠️ Por favor ingresa el nombre de la nueva categoría.');
+        return;
+      }
+    }
+
+    if (catFinal && !categoriasPersonalizadas.includes(catFinal)) {
+      categoriasPersonalizadas.push(catFinal);
+    }
+
     const nuevoLibro = {
       id: idVal ? parseInt(idVal) : (libros.length > 0 ? Math.max(...libros.map(l => l.id)) + 1 : 101),
       isbn: document.getElementById('libroFormIsbn').value.trim(),
       titulo: document.getElementById('libroFormTitulo').value.trim(),
       autor: document.getElementById('libroFormAutor').value.trim(),
-      categoria: document.getElementById('libroFormCategoria').value.trim(),
-      precio: parseFloat(document.getElementById('libroFormPrecio').value) || 0,
+      categoria: catFinal,
+      precio: precioIngresado,
       stock: parseInt(document.getElementById('libroFormStock').value) || 0,
       encuadernacion: document.getElementById('libroFormEncuadernacion').value,
       estado: estadoIngresado,
-      descripcion: document.getElementById('libroFormDescripcion').value.trim()
+      descripcion: document.getElementById('libroFormDescripcion').value.trim(),
+      portada: document.getElementById('libroFormPortadaData').value || null
     };
 
     if (idVal) {
       const index = libros.findIndex(l => l.id === parseInt(idVal));
       if (index !== -1) {
         libros[index] = nuevoLibro;
+        registrarActividad('✏️', `Se editó el libro <strong>"${escaparHTML(nuevoLibro.titulo)}"</strong>`);
       }
     } else {
       libros.unshift(nuevoLibro);
+      registrarActividad('📚', `Se agregó <strong>"${escaparHTML(nuevoLibro.titulo)}"</strong> al catálogo`);
     }
 
     guardarDatos();
+    actualizarOpcionesCategorias();
     renderizarTabla();
     cerrarModal('modalFormLibro');
   });
@@ -2123,8 +2399,10 @@ document.addEventListener('DOMContentLoaded', function() {
         estado: 'Activo'
       };
       usuarios.push(nuevoUsr);
+      registrarActividad('👥', `Nuevo usuario registrado: <strong>${escaparHTML(nombre)}</strong> (${escaparHTML(rol)})`);
       guardarDatos();
       renderModalUsuarios();
+      actualizarEstadisticas();
       document.getElementById('usrNombre').value = '';
       document.getElementById('usrEmail').value = '';
     }
@@ -2156,6 +2434,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (caso.estado === 'Pendiente') {
           caso.estado = 'En Revisión';
+          registrarActividad('🛡️', `Nuevo ticket de garantía atendido: <strong>#${caso.id}</strong> — ${escaparHTML(caso.usuario)}`);
         }
 
         guardarDatos();
@@ -2200,20 +2479,12 @@ document.addEventListener('DOMContentLoaded', function() {
     e.preventDefault();
     const nuevaCat = document.getElementById('inputNuevaCat').value.trim();
     if (nuevaCat) {
-      const maxId = libros.length > 0 ? Math.max(...libros.map(l => l.id)) + 1 : 200;
-      libros.push({
-        id: maxId,
-        isbn: "978" + Math.floor(1000000000 + Math.random() * 9000000000),
-        titulo: "Manual de " + nuevaCat,
-        autor: "Autor Editorial",
-        precio: 30000,
-        descripcion: "Libro usado registrado para la categoría " + nuevaCat,
-        stock: 5,
-        categoria: nuevaCat,
-        encuadernacion: "Dura",
-        estado: "Excelente"
-      });
+      if (!categoriasPersonalizadas.includes(nuevaCat)) {
+        categoriasPersonalizadas.push(nuevaCat);
+      }
+      registrarActividad('🏷️', `Se añadió la nueva categoría <strong>${escaparHTML(nuevaCat)}</strong>`);
       guardarDatos();
+      actualizarOpcionesCategorias();
       renderizarTabla();
       renderListaCategoriasModal();
       document.getElementById('inputNuevaCat').value = '';
@@ -2253,6 +2524,24 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+
+  // Listener para cerrar modales al hacer clic en el overlay o presionar Escape
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === this) {
+        cerrarModal(this.id);
+      }
+    });
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const activeModal = document.querySelector('.modal-overlay.active');
+      if (activeModal) {
+        cerrarModal(activeModal.id);
+      }
+    }
+  });
 });
 
 function renderModalEstadisticas() {
@@ -2274,13 +2563,48 @@ function renderModalEstadisticas() {
 function renderListaCategoriasModal() {
   const lista = document.getElementById('listaCategoriasExistentes');
   if (!lista) return;
-  const categorias = Array.from(new Set(libros.map(l => l.categoria).filter(Boolean)));
-  categorias.sort();
+  const categorias = obtenerTodasLasCategorias();
   lista.innerHTML = categorias.map(c => {
     const count = libros.filter(l => l.categoria === c).length;
     const textoConteo = count === 1 ? '1 libro' : `${count} libros`;
-    return `<li><strong>${escaparHTML(c)}</strong> (${textoConteo})</li>`;
+    const catEscapada = escapingJSString(c);
+    return `
+      <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.6rem; margin-bottom: 0.4rem; background: var(--bg-main); border: 1px solid var(--brown-light); border-radius: 4px;">
+        <span><strong>${escaparHTML(c)}</strong> <span style="font-size:0.85rem; color:var(--text-muted);">(${textoConteo})</span></span>
+        <button type="button" onclick="eliminarCategoria('${catEscapada}')" style="color: #b71c1c; background: #fff0f0; border: 1px solid #b71c1c; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 0.3rem;" title="Eliminar categoría">
+          🗑️ Eliminar
+        </button>
+      </li>
+    `;
   }).join('');
+}
+
+function escapingJSString(str) {
+  if (!str) return '';
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function eliminarCategoria(nombreCat) {
+  const librosConCat = libros.filter(l => l.categoria === nombreCat);
+  let mensajeConf = `¿Estás seguro de eliminar la categoría "${nombreCat}"?`;
+  if (librosConCat.length > 0) {
+    mensajeConf = `La categoría "${nombreCat}" tiene ${librosConCat.length} libro(s) asociado(s). Si la eliminas, esos libros se reasignarán a la categoría "General". ¿Deseas continuar?`;
+  }
+
+  if (confirm(mensajeConf)) {
+    if (librosConCat.length > 0) {
+      librosConCat.forEach(l => l.categoria = 'General');
+      if (!categoriasPersonalizadas.includes('General')) {
+        categoriasPersonalizadas.push('General');
+      }
+    }
+    categoriasPersonalizadas = categoriasPersonalizadas.filter(c => c !== nombreCat);
+    registrarActividad('🗑️', `Se eliminó la categoría <strong>${escaparHTML(nombreCat)}</strong>`);
+    guardarDatos();
+    actualizarOpcionesCategorias();
+    renderizarTabla();
+    renderListaCategoriasModal();
+  }
 }
 </script>
 </body>
