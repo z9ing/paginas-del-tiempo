@@ -2347,6 +2347,12 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('⚠️ Por favor ingresa el nombre de la nueva categoría.');
         return;
       }
+      const todas = obtenerTodasLasCategorias();
+      const existe = todas.some(c => c.trim().toLowerCase() === catFinal.toLowerCase());
+      if (existe) {
+        alert(`⚠️ La categoría "${catFinal}" ya existe en el sistema. Por favor selecciónala directamente de la lista desplegable.`);
+        return;
+      }
     }
 
     if (catFinal && !categoriasPersonalizadas.includes(catFinal)) {
@@ -2479,6 +2485,13 @@ document.addEventListener('DOMContentLoaded', function() {
     e.preventDefault();
     const nuevaCat = document.getElementById('inputNuevaCat').value.trim();
     if (nuevaCat) {
+      const todas = obtenerTodasLasCategorias();
+      const existe = todas.some(c => c.trim().toLowerCase() === nuevaCat.toLowerCase());
+      if (existe) {
+        alert(`⚠️ La categoría "${nuevaCat}" ya existe en el sistema.`);
+        return;
+      }
+
       if (!categoriasPersonalizadas.includes(nuevaCat)) {
         categoriasPersonalizadas.push(nuevaCat);
       }
